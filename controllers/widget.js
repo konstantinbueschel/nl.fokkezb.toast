@@ -1,88 +1,129 @@
-$.show = show;
-$.hide = hide;
+var LTAG = '[nl.fokkezb.toast]',
+    parent;
 
-var parent;
 
+/**
+ * SEF to organize otherwise inline code
+ *
+ * @private
+ * @param {Object} args
+ * @returns void
+ */
 (function constructor(args) {
-
-  if (OS_ANDROID) {
-
-    var properties = {
-      message: args.message
-    };
-
-    if (args.duration) {
-
-      // convert ms to constant
-      if (args.duration !== Ti.UI.NOTIFICATION_DURATION_LONG && args.duration !== Ti.UI.NOTIFICATION_DURATION_SHORT) {
-        properties.duration = (args.duration > 2000) ? Ti.UI.NOTIFICATION_DURATION_LONG : Ti.UI.NOTIFICATION_DURATION_SHORT;
-      } else {
-        properties.duration = args.duration;
-      }
+    
+    var showAndroidToast = OS_ANDROID && !args.image && !args.icon;
+    
+    if (showAndroidToast) {
+        
+        var properties = {
+            
+            message: args.message
+        };
+        
+        if (args.duration) {
+            
+            // convert ms to constant
+            if (args.duration !== Ti.UI.NOTIFICATION_DURATION_SHORT && args.duration !== Ti.UI.NOTIFICATION_DURATION_LONG) {
+                
+                properties.duration = (args.duration > 2000) ? Ti.UI.NOTIFICATION_DURATION_LONG : Ti.UI.NOTIFICATION_DURATION_SHORT;
+            }
+            else {
+                properties.duration = args.duration;
+            }
+        }
+        
+        $.notification = $.UI.create('Notification', {
+            
+            id: 'notification',
+            classes: ['nlFokkezbToast_notification']
+        });
+        
+        $.notification.applyProperties(properties);
+        
+        $.notification.show();
     }
-
-    $.notification.applyProperties(properties);
-
-    $.notification.show();
-
-  } else {
-
-    var viewClasses = ['nlFokkezbToast_view'];
-    var labelClasses = ['nlFokkezbToast_label'];
-
-    if (args.theme) {
-      viewClasses.push('nlFokkezbToast_view_' + args.theme);
-      labelClasses.push('nlFokkezbToast_label_' + args.theme);
+    else {
+        
+        var viewClasses = ['nlFokkezbToast_view'],
+            labelClasses = ['nlFokkezbToast_label'];
+        
+        if (args.theme) {
+            
+            viewClasses[viewClasses.length] = 'nlFokkezbToast_view_' + args.theme;
+            
+            labelClasses[labelClasses.length] = 'nlFokkezbToast_label_' + args.theme;
+        }
+        
+        $.resetClass($.view, viewClasses);
+        
+        $.resetClass($.label, labelClasses, {
+            
+            text: args.message
+        });
+        
+        if (args.image) {
+            
+            $.image.setImage(args.image);
+            
+            $.resetClass($.window, 'nlFokkezbToast_window_image');
+        }
+        
+        if (OS_ANDROID && !args.view) {
+            
+            Ti.API.error(LTAG, 'Could not build up toast for Android, no parent view given!');
+            
+            return;
+        }
+        
+        parent = args.view || $.window;
+        
+        parent.add($.view);
+        
+        args.view || $.window.open();
+        
+        show();
+        
+        // set a timeout to hide and close
+        args.persistent || setTimeout(hide, args.duration || 3000);
     }
-
-    $.resetClass($.view, viewClasses);
-    $.resetClass($.label, labelClasses, {
-      text: args.message
-    });
-
-    parent = args.view || $.window;
-    parent.add($.view);
-
-    if (!args.view) {
-      $.window.open();
-    }
-
-    show();
-
-    // set a timeout to hide and close
-    if (!args.persistent) {
-      setTimeout(function() {
-
-        hide();
-
-      }, args.duration || 3000);
-    }
-  }
-
+    
+    
+    // PUBLIC INTERFACE
+    $.show = show;
+    $.hide = hide;
+    
 })(arguments[0] || {});
 
-function show(e) {
 
-  // enterAnimation defined in TSS
-  $.view.animate(_.omit($.createStyle({
-    classes: ['nlFokkezbToast_enterAnimation']
-  }), 'classes'));
+function show(event) {
+    
+    // enterAnimation defined in TSS
+    $.view.animate(_.omit($.createStyle({
+        
+        classes: ['nlFokkezbToast_enterAnimation']
+        
+    }), 'classes'));
+    
+    return;
+    
+} // END show()
 
-}
 
-function hide(e) {
-
-  // exitAnimation defined in TSS
-  $.view.animate(_.omit($.createStyle({
-    classes: ['nlFokkezbToast_exitAnimation']
-
-  }), 'classes'), function(e) {
-
-    if (parent === $.window) {
-      $.window.close();
-    }
-
-    parent.remove($.view);
-
-  });
-}
+function hide(event) {
+    
+    // exitAnimation defined in TSS
+    $.view.animate(_.omit($.createStyle({
+        classes: ['nlFokkezbToast_exitAnimation']
+        
+    }), 'classes'), function(e) {
+        
+        parent === $.window && $.window.close();
+        
+        parent.remove($.view);
+        
+        return;
+    });
+    
+    return;
+    
+} // END hide()

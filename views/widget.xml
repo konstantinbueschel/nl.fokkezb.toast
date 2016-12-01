@@ -10,6 +10,4 @@
 
 	</View>
 
-	<Notification id="notification" class="nlFokkezbToast_notification" platform="android" />
-
 </Alloy>
