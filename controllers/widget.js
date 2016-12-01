@@ -1,5 +1,3 @@
-var LTAG = '[ToastWidget]';
-
 $.show = show;
 $.hide = hide;
 
@@ -7,121 +5,84 @@ var parent;
 
 (function constructor(args) {
 
-	Ti.API.debug(LTAG, 'Initializing with opts:', args);
+  if (OS_ANDROID) {
 
+    var properties = {
+      message: args.message
+    };
 
-	if (OS_ANDROID) {
+    if (args.duration) {
 
-		var properties = {
+      // convert ms to constant
+      if (args.duration !== Ti.UI.NOTIFICATION_DURATION_LONG && args.duration !== Ti.UI.NOTIFICATION_DURATION_SHORT) {
+        properties.duration = (args.duration > 2000) ? Ti.UI.NOTIFICATION_DURATION_LONG : Ti.UI.NOTIFICATION_DURATION_SHORT;
+      } else {
+        properties.duration = args.duration;
+      }
+    }
 
-			message: args.message
-		};
+    $.notification.applyProperties(properties);
 
+    $.notification.show();
 
-		if (args.duration) {
+  } else {
 
-			// convert ms to constant
-			if (args.duration !== Ti.UI.NOTIFICATION_DURATION_LONG && args.duration !== Ti.UI.NOTIFICATION_DURATION_LONG) {
+    var viewClasses = ['nlFokkezbToast_view'];
+    var labelClasses = ['nlFokkezbToast_label'];
 
-				properties.duration = (args.duration > 2000) ? Ti.UI.NOTIFICATION_DURATION_LONG : Ti.UI.NOTIFICATION_DURATION_SHORT;
-			}
-			else {
+    if (args.theme) {
+      viewClasses.push('nlFokkezbToast_view_' + args.theme);
+      labelClasses.push('nlFokkezbToast_label_' + args.theme);
+    }
 
-				properties.duration = args.duration;
-			}
-		}
+    $.resetClass($.view, viewClasses);
+    $.resetClass($.label, labelClasses, {
+      text: args.message
+    });
 
+    parent = args.view || $.window;
+    parent.add($.view);
 
-		$.notification.applyProperties(properties);
+    if (!args.view) {
+      $.window.open();
+    }
 
-		$.notification.show();
-	}
-	else {
+    show();
 
-		var viewClasses = ['nlFokkezbToast_view'];
-		var labelClasses = ['nlFokkezbToast_label'];
+    // set a timeout to hide and close
+    if (!args.persistent) {
+      setTimeout(function() {
 
-		if (args.theme) {
+        hide();
 
-			viewClasses.push('nlFokkezbToast_view_' + args.theme);
-			labelClasses.push('nlFokkezbToast_label_' + args.theme);
-		}
-
-		$.resetClass($.view, viewClasses);
-		$.resetClass($.label, labelClasses, {
-
-			text: args.message
-		});
-
-
-		if (args.image) {
-
-			$.image.setImage(args.image);
-			$.resetClass($.window, 'nlFokkezbToast_window_image');
-		}
-
-
-		parent = args.view || $.window;
-
-		parent.add($.view);
-
-		if (!args.view) {
-
-			$.window.open();
-		}
-
-		show();
-
-
-		// set a timeout to hide and close
-		if (!args.persistent) {
-
-			setTimeout(hide, args.duration || 3000);
-		}
-	}
-
-
-	return;
+      }, args.duration || 3000);
+    }
+  }
 
 })(arguments[0] || {});
 
-
 function show(e) {
 
-	// enterAnimation defined in TSS
-	$.view.animate(_.omit($.createStyle({
+  // enterAnimation defined in TSS
+  $.view.animate(_.omit($.createStyle({
+    classes: ['nlFokkezbToast_enterAnimation']
+  }), 'classes'));
 
-		classes: ['nlFokkezbToast_enterAnimation']
-
-	}), 'classes'));
-
-
-	return;
-
-} // END show()
-
+}
 
 function hide(e) {
 
-	// exitAnimation defined in TSS
-	$.view.animate(_.omit($.createStyle({
+  // exitAnimation defined in TSS
+  $.view.animate(_.omit($.createStyle({
+    classes: ['nlFokkezbToast_exitAnimation']
 
-		classes: ['nlFokkezbToast_exitAnimation']
+  }), 'classes'), function(e) {
 
-	}), 'classes'), function(e) {
+    if (parent === $.window) {
+      $.window.close();
+    }
 
-		if (parent === $.window) {
+    parent.remove($.view);
 
-			$.window.close();
-		}
-
-		parent.remove($.view);
-
-
-		return;
-	});
-
-
-	return;
-
-} // END hide()
+  });
+}
